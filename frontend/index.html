@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniStream — Real-Time Multimodal Voice & Vision AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/styles.css?v=1.0.3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-['Inter']">
+
+    <!-- Top Navigation & Latency Benchmarks -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" id="statusDot"></div>
+            <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                OmniStream <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 font-mono border border-indigo-500/30">v1.0 (Edge/Cloud)</span>
+            </h1>
+        </div>
+
+        <!-- Real-time Latency Profiler Gauges -->
+        <div class="flex items-center gap-4 text-xs font-mono text-slate-400">
+            <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-2">
+                <span class="text-slate-500">TTFT:</span>
+                <span id="metricTtft" class="text-indigo-400 font-semibold">-- ms</span>
+            </div>
+            <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-2">
+                <span class="text-slate-500">TTFB (Audio):</span>
+                <span id="metricTtfb" class="text-emerald-400 font-semibold">-- ms</span>
+            </div>
+            <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-2">
+                <span class="text-slate-500">Status:</span>
+                <span id="sessionStatus" class="text-amber-400 font-medium">Ready</span>
+            </div>
+            <button id="openSettingsBtn" class="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 font-mono transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                API Key
+            </button>
+        </div>
+    </header>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-white text-base">Configure Free API Keys</h3>
+                <button id="closeSettingsBtn" class="text-slate-400 hover:text-white">&times;</button>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Connect your 100% free Google Gemini key from <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 underline">Google AI Studio</a> for live vision reasoning.
+            </p>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-mono text-slate-300">Gemini API Key</label>
+                <input type="password" id="geminiKeyInput" placeholder="AIzaSy..." class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="saveKeysBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition">Save & Activate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Video & Sensor Feed (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            <!-- Webcam Card -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 shadow-xl backdrop-blur-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-mono tracking-wider text-slate-400 uppercase flex items-center gap-2">
+                        <svg class="w-4 h-4 text-rose-500 animate-pulse" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6"/></svg>
+                        Visual Grounding (Webcam)
+                    </span>
+                    <span id="visionFps" class="text-[11px] font-mono text-slate-500">1 FPS Sync</span>
+                </div>
+                
+                <div class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-slate-800/80 flex items-center justify-center">
+                    <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                    <div id="videoPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 text-xs gap-2 bg-slate-950">
+                        <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>Camera paused</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <button id="toggleCameraBtn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition border border-slate-700">
+                        Toggle Camera
+                    </button>
+                    <span class="text-[11px] text-slate-400">Captures on speech event</span>
+                </div>
+            </div>
+
+            <!-- Audio Waveform Visualizer Card -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 shadow-xl backdrop-blur-sm">
+                <span class="text-xs font-mono tracking-wider text-slate-400 uppercase flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+                    Microphone Input (16kHz PCM)
+                </span>
+                <canvas id="waveformCanvas" class="w-full h-20 rounded-lg bg-slate-950 border border-slate-800/80"></canvas>
+            </div>
+        </section>
+
+        <!-- Right Column: Conversation Stream & Controls (7 cols) -->
+        <section class="lg:col-span-7 flex flex-col bg-slate-900/70 border border-slate-800 rounded-2xl shadow-xl overflow-hidden backdrop-blur-sm">
+            
+            <!-- Conversation Stream Log -->
+            <div id="chatBox" class="flex-1 p-5 overflow-y-auto flex flex-col gap-4 max-h-[520px] min-h-[380px]">
+                <div class="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-xs text-slate-300">
+                    👋 <strong>Welcome to OmniStream!</strong> Click <em>"Start Stream"</em> below, allow microphone and webcam access, and speak naturally. Interrupt the AI at any time to test the real-time barge-in capability.
+                </div>
+            </div>
+
+            <!-- Live Streaming Interim Display -->
+            <div id="streamingBubble" class="hidden px-5 py-2.5 bg-indigo-950/40 border-t border-indigo-900/40 flex items-center gap-3 text-xs text-indigo-300 font-mono">
+                <span class="inline-block w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+                <span id="streamingText" class="truncate">Streaming response tokens...</span>
+            </div>
+
+            <!-- Bottom Controller Bar -->
+            <div class="border-t border-slate-800 p-4 bg-slate-900/90 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <button id="startBtn" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-sm transition shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Start Stream
+                    </button>
+                    
+                    <button id="interruptBtn" disabled class="px-4 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-medium text-xs transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        Barge-in / Stop
+                    </button>
+
+                    <button id="testAudioBtn" class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-mono transition flex items-center gap-1.5" title="Test if your browser can play audio">
+                        🔊 Test Audio
+                    </button>
+                </div>
+
+                <!-- Text query fallback -->
+                <form id="textForm" class="flex-1 max-w-xs flex gap-2">
+                    <input type="text" id="textInput" placeholder="Or type a question..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg text-slate-300 transition">Send</button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <canvas id="hiddenSnapshotCanvas" class="hidden"></canvas>
+
+    <script src="/static/app.js?v=1.0.4"></script>
+</body>
+</html>
